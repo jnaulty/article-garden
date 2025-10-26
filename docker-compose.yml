@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # Frontend React Application
+  frontend:
+    build:
+      context: ./private-publishing-dapp
+      dockerfile: Dockerfile
+      target: development
+    container_name: private-publishing-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_PACKAGE_ID=${PACKAGE_ID:-0x0}
+      - VITE_NETWORK=localnet
+      - VITE_RPC_URL=http://host.docker.internal:9000
+    volumes:
+      - ./private-publishing-dapp/src:/app/src
+      - ./private-publishing-dapp/public:/app/public
+      - ./private-publishing-dapp/index.html:/app/index.html
+      - ./private-publishing-dapp/vite.config.mts:/app/vite.config.mts
+      - ./private-publishing-dapp/tsconfig.json:/app/tsconfig.json
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0
+    networks:
+      - sui-network
+    restart: unless-stopped
+
+networks:
+  sui-network:
+    driver: bridge
+
+# Note: For Sui local network, run on host machine:
+# sui start --with-faucet
+#
+# This approach is more reliable than running Sui in Docker

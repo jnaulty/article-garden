@@ -1,0 +1,23 @@
+{
+  "name": "private-publishing-e2e-tests",
+  "version": "0.1.0",
+  "description": "End-to-end tests for Private Publishing Platform using Sui TypeScript SDK",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:build": "npm run build:contracts && npm run test",
+    "build:contracts": "cd .. && sui move build",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@mysten/sui": "^1.15.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

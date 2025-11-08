@@ -36,7 +36,7 @@ module private_publishing::access_control_tests {
             // Create subscription
             let payment = coin::mint_for_testing<SUI>(BASIC_PRICE, ctx);
             let subscription = subscription::subscribe(
-                &mut publication,
+                &publication,
                 &mut treasury,
                 subscription::create_tier_basic(),
                 payment,
@@ -47,7 +47,7 @@ module private_publishing::access_control_tests {
             // Create article requiring basic tier
             // Calculate deposit (1% of premium price)
             let deposit = coin::mint_for_testing<SUI>(PREMIUM_PRICE / 100, ctx);
-            let article = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -61,6 +61,19 @@ module private_publishing::access_control_tests {
                 ctx
             );
 
+            // Clean up
+            test_scenario::return_shared(treasury);
+            transfer::public_transfer(subscription, creator);
+            transfer::public_transfer(publication, creator);
+            transfer::public_transfer(publisher_cap, creator);
+        };
+
+        // Access the shared article in a new transaction
+        test_scenario::next_tx(&mut scenario, creator);
+        {
+            let article = test_scenario::take_shared<article::Article>(&scenario);
+            let subscription = test_scenario::take_from_sender<subscription::SubscriptionNFT>(&scenario);
+
             // Verify access
             let has_access = access_control::verify_subscription_access(
                 &subscription,
@@ -69,12 +82,9 @@ module private_publishing::access_control_tests {
             );
             assert!(has_access);
 
-            // Clean up
-            test_scenario::return_shared(treasury);
-            transfer::public_transfer(subscription, creator);
-            transfer::public_transfer(article, creator);
-            transfer::public_transfer(publication, creator);
-            transfer::public_transfer(publisher_cap, creator);
+            // Return shared objects
+            test_scenario::return_shared(article);
+            test_scenario::return_to_sender(&scenario, subscription);
         };
 
         clock::destroy_for_testing(clock);
@@ -103,7 +113,7 @@ module private_publishing::access_control_tests {
 
             let payment = coin::mint_for_testing<SUI>(BASIC_PRICE, ctx);
             let subscription = subscription::subscribe(
-                &mut publication,
+                &publication,
                 &mut treasury,
                 subscription::create_tier_basic(),
                 payment,
@@ -112,7 +122,7 @@ module private_publishing::access_control_tests {
             );
 
             let deposit = coin::mint_for_testing<SUI>(PREMIUM_PRICE / 100, ctx);
-            let article = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -126,8 +136,20 @@ module private_publishing::access_control_tests {
                 ctx
             );
 
-            // Advance time past expiry (31 days)
-            clock::increment_for_testing(&mut clock, 31 * 86_400_000);
+            // Clean up
+            test_scenario::return_shared(treasury);
+            transfer::public_transfer(subscription, creator);
+            transfer::public_transfer(publication, creator);
+            transfer::public_transfer(publisher_cap, creator);
+        };
+
+        // Advance time past expiry (31 days) and verify access denied
+        clock::increment_for_testing(&mut clock, 31 * 86_400_000);
+
+        test_scenario::next_tx(&mut scenario, creator);
+        {
+            let article = test_scenario::take_shared<article::Article>(&scenario);
+            let subscription = test_scenario::take_from_sender<subscription::SubscriptionNFT>(&scenario);
 
             // Verify access denied for expired subscription
             let has_access = access_control::verify_subscription_access(
@@ -137,12 +159,9 @@ module private_publishing::access_control_tests {
             );
             assert!(!has_access);
 
-            // Clean up
-            test_scenario::return_shared(treasury);
-            transfer::public_transfer(subscription, creator);
-            transfer::public_transfer(article, creator);
-            transfer::public_transfer(publication, creator);
-            transfer::public_transfer(publisher_cap, creator);
+            // Return objects
+            test_scenario::return_shared(article);
+            test_scenario::return_to_sender(&scenario, subscription);
         };
 
         clock::destroy_for_testing(clock);
@@ -171,7 +190,7 @@ module private_publishing::access_control_tests {
             let published_at = clock::timestamp_ms(&clock) / 1000;
 
             let deposit = coin::mint_for_testing<SUI>(PREMIUM_PRICE / 100, ctx);
-            let article = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -184,6 +203,19 @@ module private_publishing::access_control_tests {
                 deposit,
                 ctx
             );
+
+            test_scenario::return_shared(treasury);
+            transfer::public_transfer(publication, creator);
+            transfer::public_transfer(publisher_cap, creator);
+        };
+
+        // Generate read token in a new transaction
+        test_scenario::next_tx(&mut scenario, creator);
+        {
+            let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
+            let article = test_scenario::take_shared<article::Article>(&scenario);
+            let publication = test_scenario::take_from_sender<publication::Publication>(&scenario);
+            let ctx = test_scenario::ctx(&mut scenario);
 
             // Calculate daily price (monthly price / 30)
             let daily_price = BASIC_PRICE / 30;
@@ -206,10 +238,9 @@ module private_publishing::access_control_tests {
 
             // Clean up
             test_scenario::return_shared(treasury);
+            test_scenario::return_shared(article);
+            test_scenario::return_to_sender(&scenario, publication);
             transfer::public_transfer(token, reader);
-            transfer::public_transfer(article, creator);
-            transfer::public_transfer(publication, creator);
-            transfer::public_transfer(publisher_cap, creator);
         };
 
         clock::destroy_for_testing(clock);
@@ -237,7 +268,7 @@ module private_publishing::access_control_tests {
             let published_at = clock::timestamp_ms(&clock) / 1000;
 
             let deposit = coin::mint_for_testing<SUI>(PREMIUM_PRICE / 100, ctx);
-            let article = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -250,6 +281,19 @@ module private_publishing::access_control_tests {
                 deposit,
                 ctx
             );
+
+            test_scenario::return_shared(treasury);
+            transfer::public_transfer(publication, creator);
+            transfer::public_transfer(publisher_cap, creator);
+        };
+
+        // Generate read token and verify in a new transaction
+        test_scenario::next_tx(&mut scenario, creator);
+        {
+            let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
+            let article = test_scenario::take_shared<article::Article>(&scenario);
+            let publication = test_scenario::take_from_sender<publication::Publication>(&scenario);
+            let ctx = test_scenario::ctx(&mut scenario);
 
             let daily_price = BASIC_PRICE / 30;
             let payment = coin::mint_for_testing<SUI>(daily_price, ctx);
@@ -279,10 +323,9 @@ module private_publishing::access_control_tests {
 
             // Clean up
             test_scenario::return_shared(treasury);
+            test_scenario::return_shared(article);
+            test_scenario::return_to_sender(&scenario, publication);
             transfer::public_transfer(token, creator);
-            transfer::public_transfer(article, creator);
-            transfer::public_transfer(publication, creator);
-            transfer::public_transfer(publisher_cap, creator);
         };
 
         clock::destroy_for_testing(clock);
@@ -306,37 +349,23 @@ module private_publishing::access_control_tests {
         {
             let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
             let ctx = test_scenario::ctx(&mut scenario);
-            let (mut publication, publisher_cap) = publication::create_for_testing(ctx);
+            let (publication, publisher_cap) = publication::create_for_testing(ctx);
             let published_at = clock::timestamp_ms(&clock) / 1000;
 
-            // Create two articles
-            let deposit1 = coin::mint_for_testing<SUI>(PREMIUM_PRICE / 100, ctx);
-            let article1 = article::publish_article(
-                &mut publication,
-                &mut treasury,
-                &publisher_cap,
+            // Create two articles for testing using the test helper to avoid shared object complexity
+            let article1 = article::create_for_testing(
+                publication::id(&publication),
                 b"Article 1".to_string(),
-                b"Test excerpt 1".to_string(),
-                b"blob_1".to_string(),
-                b"key_1",
                 subscription::create_tier_basic(),
                 published_at,
-                deposit1,
                 ctx
             );
-
-            let deposit2 = coin::mint_for_testing<SUI>(PREMIUM_PRICE / 100, ctx);
-            let article2 = article::publish_article(
-                &mut publication,
-                &mut treasury,
-                &publisher_cap,
+            
+            let article2 = article::create_for_testing(
+                publication::id(&publication),
                 b"Article 2".to_string(),
-                b"Test excerpt 2".to_string(),
-                b"blob_2".to_string(),
-                b"key_2",
                 subscription::create_tier_basic(),
                 published_at,
-                deposit2,
                 ctx
             );
 
@@ -359,11 +388,11 @@ module private_publishing::access_control_tests {
 
             // Clean up
             test_scenario::return_shared(treasury);
+            transfer::public_transfer(publication, creator);
+            transfer::public_transfer(publisher_cap, creator);
             transfer::public_transfer(token, creator);
             transfer::public_transfer(article1, creator);
             transfer::public_transfer(article2, creator);
-            transfer::public_transfer(publication, creator);
-            transfer::public_transfer(publisher_cap, creator);
         };
 
         clock::destroy_for_testing(clock);
@@ -391,7 +420,7 @@ module private_publishing::access_control_tests {
             let published_at = clock::timestamp_ms(&clock) / 1000;
 
             let deposit = coin::mint_for_testing<SUI>(PREMIUM_PRICE / 100, ctx);
-            let article = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -404,6 +433,19 @@ module private_publishing::access_control_tests {
                 deposit,
                 ctx
             );
+
+            test_scenario::return_shared(treasury);
+            transfer::public_transfer(publication, creator);
+            transfer::public_transfer(publisher_cap, creator);
+        };
+
+        // Generate and consume token in a new transaction
+        test_scenario::next_tx(&mut scenario, creator);
+        {
+            let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
+            let article = test_scenario::take_shared<article::Article>(&scenario);
+            let publication = test_scenario::take_from_sender<publication::Publication>(&scenario);
+            let ctx = test_scenario::ctx(&mut scenario);
 
             let daily_price = BASIC_PRICE / 30;
             let payment = coin::mint_for_testing<SUI>(daily_price, ctx);
@@ -422,9 +464,8 @@ module private_publishing::access_control_tests {
 
             // Clean up
             test_scenario::return_shared(treasury);
-            transfer::public_transfer(article, creator);
-            transfer::public_transfer(publication, creator);
-            transfer::public_transfer(publisher_cap, creator);
+            test_scenario::return_shared(article);
+            test_scenario::return_to_sender(&scenario, publication);
         };
 
         clock::destroy_for_testing(clock);
@@ -453,7 +494,7 @@ module private_publishing::access_control_tests {
             let published_at = clock::timestamp_ms(&clock) / 1000;
 
             let deposit = coin::mint_for_testing<SUI>(PREMIUM_PRICE / 100, ctx);
-            let article = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -466,6 +507,19 @@ module private_publishing::access_control_tests {
                 deposit,
                 ctx
             );
+
+            test_scenario::return_shared(treasury);
+            transfer::public_transfer(publication, creator);
+            transfer::public_transfer(publisher_cap, creator);
+        };
+
+        // Try to generate token with insufficient payment (should fail)
+        test_scenario::next_tx(&mut scenario, creator);
+        {
+            let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
+            let article = test_scenario::take_shared<article::Article>(&scenario);
+            let publication = test_scenario::take_from_sender<publication::Publication>(&scenario);
+            let ctx = test_scenario::ctx(&mut scenario);
 
             // Pay less than required
             let payment = coin::mint_for_testing<SUI>(1000, ctx);
@@ -480,10 +534,9 @@ module private_publishing::access_control_tests {
             );
 
             test_scenario::return_shared(treasury);
+            test_scenario::return_shared(article);
+            test_scenario::return_to_sender(&scenario, publication);
             transfer::public_transfer(token, creator);
-            transfer::public_transfer(article, creator);
-            transfer::public_transfer(publication, creator);
-            transfer::public_transfer(publisher_cap, creator);
         };
 
         clock::destroy_for_testing(clock);

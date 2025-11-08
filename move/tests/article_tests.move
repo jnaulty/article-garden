@@ -22,6 +22,8 @@ module private_publishing::article_tests {
             treasury::init_for_testing(test_scenario::ctx(&mut scenario));
         };
 
+        let published_at;
+        let publication_id;
         test_scenario::next_tx(&mut scenario, creator);
         {
             let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
@@ -29,12 +31,13 @@ module private_publishing::article_tests {
             let (mut publication, publisher_cap) = publication::create_for_testing(ctx);
 
             let initial_count = publication::article_count(&publication);
-            let published_at = clock::timestamp_ms(&clock) / 1000;
+            published_at = clock::timestamp_ms(&clock) / 1000;
+            publication_id = publication::id(&publication);
 
             // Create deposit (15 SUI premium price, 1% = 0.15 SUI)
             let deposit = coin::mint_for_testing<SUI>(150_000_000, ctx);
 
-            let article = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -48,6 +51,20 @@ module private_publishing::article_tests {
                 ctx
             );
 
+            // Verify article count incremented
+            assert!(publication::article_count(&publication) == initial_count + 1);
+
+            // Clean up
+            test_scenario::return_shared(treasury);
+            transfer::public_transfer(publication, creator);
+            transfer::public_transfer(publisher_cap, creator);
+        };
+
+        // Take the shared article and verify its fields
+        test_scenario::next_tx(&mut scenario, creator);
+        {
+            let article = test_scenario::take_shared(&scenario);
+
             // Verify article fields
             assert!(article::title(&article) == b"Test Article".to_string());
             assert!(article::excerpt(&article) == b"This is a test article excerpt".to_string());
@@ -55,16 +72,9 @@ module private_publishing::article_tests {
             assert!(article::seal_key_id(&article) == b"seal_key_456");
             assert!(article::published_at(&article) == published_at);
             assert!(!article::is_archived(&article));
-            assert!(article::publication_id(&article) == publication::id(&publication));
+            assert!(article::publication_id(&article) == publication_id);
 
-            // Verify article count incremented
-            assert!(publication::article_count(&publication) == initial_count + 1);
-
-            // Clean up
-            test_scenario::return_shared(treasury);
-            transfer::public_transfer(article, creator);
-            transfer::public_transfer(publication, creator);
-            transfer::public_transfer(publisher_cap, creator);
+            test_scenario::return_shared(article);
         };
 
         clock::destroy_for_testing(clock);
@@ -84,16 +94,17 @@ module private_publishing::article_tests {
             treasury::init_for_testing(test_scenario::ctx(&mut scenario));
         };
 
+        let published_at;
         test_scenario::next_tx(&mut scenario, creator);
         {
             let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
             let ctx = test_scenario::ctx(&mut scenario);
             let (mut publication, publisher_cap) = publication::create_for_testing(ctx);
-            let published_at = clock::timestamp_ms(&clock) / 1000;
+            published_at = clock::timestamp_ms(&clock) / 1000;
 
             let deposit = coin::mint_for_testing<SUI>(150_000_000, ctx);
 
-            let mut article = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -106,6 +117,18 @@ module private_publishing::article_tests {
                 deposit,
                 ctx
             );
+
+            // Clean up
+            test_scenario::return_shared(treasury);
+            transfer::public_transfer(publication, creator);
+            transfer::public_transfer(publisher_cap, creator);
+        };
+
+        // Update the shared article
+        test_scenario::next_tx(&mut scenario, creator);
+        {
+            let mut article = test_scenario::take_shared(&scenario);
+            let publisher_cap = test_scenario::take_from_sender(&scenario);
 
             // Update article
             article::update_article(
@@ -123,11 +146,8 @@ module private_publishing::article_tests {
             assert!(article::walrus_blob_id(&article) == b"walrus_blob_123".to_string());
             assert!(article::published_at(&article) == published_at);
 
-            // Clean up
-            test_scenario::return_shared(treasury);
-            transfer::public_transfer(article, creator);
-            transfer::public_transfer(publication, creator);
-            transfer::public_transfer(publisher_cap, creator);
+            test_scenario::return_shared(article);
+            test_scenario::return_to_sender(&scenario, publisher_cap);
         };
 
         clock::destroy_for_testing(clock);
@@ -156,7 +176,7 @@ module private_publishing::article_tests {
 
             let deposit = coin::mint_for_testing<SUI>(150_000_000, ctx);
 
-            let mut article = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -170,6 +190,18 @@ module private_publishing::article_tests {
                 ctx
             );
 
+            // Clean up
+            test_scenario::return_shared(treasury);
+            transfer::public_transfer(publication, creator);
+            transfer::public_transfer(publisher_cap, creator);
+        };
+
+        // Test archive/unarchive on the shared article
+        test_scenario::next_tx(&mut scenario, creator);
+        {
+            let mut article = test_scenario::take_shared(&scenario);
+            let publisher_cap = test_scenario::take_from_sender(&scenario);
+
             assert!(!article::is_archived(&article));
 
             // Archive article
@@ -180,11 +212,8 @@ module private_publishing::article_tests {
             article::unarchive_article(&mut article, &publisher_cap);
             assert!(!article::is_archived(&article));
 
-            // Clean up
-            test_scenario::return_shared(treasury);
-            transfer::public_transfer(article, creator);
-            transfer::public_transfer(publication, creator);
-            transfer::public_transfer(publisher_cap, creator);
+            test_scenario::return_shared(article);
+            test_scenario::return_to_sender(&scenario, publisher_cap);
         };
 
         clock::destroy_for_testing(clock);
@@ -215,8 +244,8 @@ module private_publishing::article_tests {
 
             let deposit = coin::mint_for_testing<SUI>(150_000_000, ctx);
 
-            // Try to publish to publication1 with publisher_cap2
-            let article = article::publish_article(
+            // Try to publish to publication1 with publisher_cap2 - should abort
+            article::publish_article(
                 &mut publication1,
                 &mut treasury,
                 &publisher_cap2,
@@ -231,7 +260,6 @@ module private_publishing::article_tests {
             );
 
             test_scenario::return_shared(treasury);
-            transfer::public_transfer(article, creator);
             transfer::public_transfer(publication1, creator);
             transfer::public_transfer(publisher_cap1, creator);
             transfer::public_transfer(publication2, creator);
@@ -266,7 +294,7 @@ module private_publishing::article_tests {
 
             let deposit = coin::mint_for_testing<SUI>(150_000_000, ctx);
 
-            let mut article = article::publish_article(
+            article::publish_article(
                 &mut publication1,
                 &mut treasury,
                 &publisher_cap1,
@@ -280,7 +308,19 @@ module private_publishing::article_tests {
                 ctx
             );
 
-            // Try to update with wrong cap
+            test_scenario::return_shared(treasury);
+            transfer::public_transfer(publication1, creator);
+            transfer::public_transfer(_publication2, creator);
+            transfer::public_transfer(publisher_cap1, creator);
+            transfer::public_transfer(publisher_cap2, creator);
+        };
+
+        // Try to update with wrong cap - should abort
+        test_scenario::next_tx(&mut scenario, creator);
+        {
+            let mut article = test_scenario::take_shared(&scenario);
+            let publisher_cap2 = test_scenario::take_from_sender(&scenario);
+
             article::update_article(
                 &mut article,
                 &publisher_cap2,
@@ -288,12 +328,8 @@ module private_publishing::article_tests {
                 b"Updated excerpt".to_string()
             );
 
-            test_scenario::return_shared(treasury);
-            transfer::public_transfer(article, creator);
-            transfer::public_transfer(publication1, creator);
-            transfer::public_transfer(_publication2, creator);
-            transfer::public_transfer(publisher_cap1, creator);
-            transfer::public_transfer(publisher_cap2, creator);
+            test_scenario::return_shared(article);
+            test_scenario::return_to_sender(&scenario, publisher_cap2);
         };
 
         clock::destroy_for_testing(clock);
@@ -324,7 +360,7 @@ module private_publishing::article_tests {
 
             // Publish first article
             let deposit1 = coin::mint_for_testing<SUI>(150_000_000, ctx);
-            let article1 = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -341,7 +377,7 @@ module private_publishing::article_tests {
 
             // Publish second article
             let deposit2 = coin::mint_for_testing<SUI>(150_000_000, ctx);
-            let article2 = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -358,7 +394,7 @@ module private_publishing::article_tests {
 
             // Publish third article
             let deposit3 = coin::mint_for_testing<SUI>(150_000_000, ctx);
-            let article3 = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -375,9 +411,6 @@ module private_publishing::article_tests {
 
             // Clean up
             test_scenario::return_shared(treasury);
-            transfer::public_transfer(article1, creator);
-            transfer::public_transfer(article2, creator);
-            transfer::public_transfer(article3, creator);
             transfer::public_transfer(publication, creator);
             transfer::public_transfer(publisher_cap, creator);
         };

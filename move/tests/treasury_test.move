@@ -110,7 +110,7 @@ module private_publishing::treasury_test {
             let deposit = coin::mint_for_testing<SUI>(30_000_000, ts::ctx(&mut scenario));
 
             // Publish article
-            let article = article::publish_article(
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -128,7 +128,6 @@ module private_publishing::treasury_test {
             assert!(treasury::balance(&treasury) == 30_000_000, 0);
             assert!(treasury::total_deposits_collected(&treasury) == 30_000_000, 1);
 
-            transfer::public_share_object(article);
             ts::return_to_sender(&scenario, publisher_cap);
             ts::return_shared(treasury);
             ts::return_shared(publication);

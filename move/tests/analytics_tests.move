@@ -272,7 +272,7 @@ module private_publishing::analytics_tests {
             let ctx = test_scenario::ctx(&mut scenario);
             let (publication, publisher_cap) = publication::create_for_testing(ctx);
 
-            let mut stats = analytics::create_stats(
+            let stats = analytics::create_stats(
                 &publication,
                 &publisher_cap,
                 ctx

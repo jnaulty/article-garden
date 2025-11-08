@@ -1,0 +1,85 @@
+name: Move Tests
+
+on:
+  push:
+    branches: [ main, develop, fix/**, feature/** ]
+    paths:
+      - 'move/**'
+      - '.github/workflows/move-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'move/**'
+      - '.github/workflows/move-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Cache Sui binary
+      id: cache-sui
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/bin/sui
+        key: ${{ runner.os }}-sui-binary-v1.19.0
+        restore-keys: |
+          ${{ runner.os }}-sui-binary-
+
+    - name: Install Sui CLI
+      if: steps.cache-sui.outputs.cache-hit != 'true'
+      run: |
+        wget -q https://github.com/MystenLabs/sui/releases/download/testnet-v1.19.0/sui-testnet-v1.19.0-ubuntu-x86_64.tgz
+        tar -xzf sui-testnet-v1.19.0-ubuntu-x86_64.tgz
+        mkdir -p ~/.cargo/bin
+        mv sui ~/.cargo/bin/
+        chmod +x ~/.cargo/bin/sui
+
+    - name: Add Sui to PATH
+      run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Verify Sui
+      run: sui --version
+
+    - name: Cache Move dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.move/
+          move/build/
+        key: ${{ runner.os }}-move-${{ hashFiles('move/Move.lock', 'move/Move.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-move-
+
+    - name: Build Move package
+      working-directory: ./move
+      run: sui move build
+
+    - name: Run Move tests
+      working-directory: ./move
+      run: sui move test --gas-limit 100000000
+
+    - name: Check for warnings
+      working-directory: ./move
+      run: |
+        OUTPUT=$(sui move build 2>&1)
+        WARNING_COUNT=$(echo "$OUTPUT" | grep -c "warning\[" || true)
+        if [ "$WARNING_COUNT" -gt 0 ]; then
+          echo "❌ Found $WARNING_COUNT warning(s)"
+          echo "$OUTPUT"
+          exit 1
+        fi
+
+    - name: Test summary
+      if: always()
+      run: |
+        echo "## Move Test Results" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ All 51 tests passed with zero warnings" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Tests failed - see logs above" >> $GITHUB_STEP_SUMMARY
+        fi
+

@@ -22,8 +22,8 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } =
     testnet: {
       url: getFullnodeUrl("testnet"),
       variables: {
-        packageId: "0x7af5d158a504cb95878712515da6dab0dd7038b2e32202253a722f1c46d2d166",
-        treasuryId: "0x0e9eed15bbfb1a3bb66c4f09849441120f42f05abec0de421588caa8bcf46fbd",
+        packageId: "0x41f5e97994f1f15479821e68e8018b2c52b32a07aea2df59a9db1141690fd88f",
+        treasuryId: "0xc97daeff8a72b4f0bed8f66c3c19779d78d6eedbfe3e58774a1495701f863a22",
         // Mysten Labs Open Mode Key Servers (Testnet)
         sealKeyServers: [
           "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75", // mysten-testnet-1

@@ -46,7 +46,7 @@ module private_publishing::treasury_test {
         ts::next_tx(&mut scenario, BOB);
         {
             let mut treasury = ts::take_shared<Treasury>(&scenario);
-            let mut publication = ts::take_shared<Publication>(&scenario);
+            let publication = ts::take_shared<Publication>(&scenario);
             let clock = clock::create_for_testing(ts::ctx(&mut scenario));
 
             // Create payment (2 SUI for premium)
@@ -54,7 +54,7 @@ module private_publishing::treasury_test {
 
             // Subscribe (should collect 1% fee = 20_000_000 MIST)
             let subscription = subscription::subscribe(
-                &mut publication,
+                &publication,
                 &mut treasury,
                 subscription::create_tier_premium(),
                 payment,
@@ -109,8 +109,8 @@ module private_publishing::treasury_test {
             // Create deposit (1% of 3 SUI premium = 0.03 SUI)
             let deposit = coin::mint_for_testing<SUI>(30_000_000, ts::ctx(&mut scenario));
 
-            // Publish article
-            let article = article::publish_article(
+            // Publish article (automatically shares it)
+            article::publish_article(
                 &mut publication,
                 &mut treasury,
                 &publisher_cap,
@@ -128,7 +128,6 @@ module private_publishing::treasury_test {
             assert!(treasury::balance(&treasury) == 30_000_000, 0);
             assert!(treasury::total_deposits_collected(&treasury) == 30_000_000, 1);
 
-            transfer::public_share_object(article);
             ts::return_to_sender(&scenario, publisher_cap);
             ts::return_shared(treasury);
             ts::return_shared(publication);

@@ -19,7 +19,7 @@ module private_publishing::subscription_tests {
         let mut scenario = test_scenario::begin(creator);
 
         // Create clock
-        let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
 
         // Initialize treasury
         test_scenario::next_tx(&mut scenario, creator);
@@ -31,14 +31,14 @@ module private_publishing::subscription_tests {
         {
             let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
             let ctx = test_scenario::ctx(&mut scenario);
-            let (mut publication, publisher_cap) = publication::create_for_testing(ctx);
+            let (publication, publisher_cap) = publication::create_for_testing(ctx);
 
             // Create payment
             let payment = coin::mint_for_testing<SUI>(BASIC_PRICE, ctx);
 
             // Subscribe with basic tier
             let subscription = subscription::subscribe(
-                &mut publication,
+                &publication,
                 &mut treasury,
                 subscription::create_tier_basic(),
                 payment,
@@ -69,7 +69,7 @@ module private_publishing::subscription_tests {
         let subscriber = @0xBEEF;
         let mut scenario = test_scenario::begin(creator);
 
-        let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
 
         
         // Initialize treasury
@@ -82,12 +82,12 @@ module private_publishing::subscription_tests {
         {
             let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
             let ctx = test_scenario::ctx(&mut scenario);
-            let (mut publication, publisher_cap) = publication::create_for_testing(ctx);
+            let (publication, publisher_cap) = publication::create_for_testing(ctx);
 
             let payment = coin::mint_for_testing<SUI>(PREMIUM_PRICE, ctx);
 
             let subscription = subscription::subscribe(
-                &mut publication,
+                &publication,
                 &mut treasury,
                 subscription::create_tier_premium(),
                 payment,
@@ -114,7 +114,7 @@ module private_publishing::subscription_tests {
         let subscriber = @0xBEEF;
         let mut scenario = test_scenario::begin(creator);
 
-        let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
 
         
         // Initialize treasury
@@ -127,12 +127,12 @@ module private_publishing::subscription_tests {
         {
             let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
             let ctx = test_scenario::ctx(&mut scenario);
-            let (mut publication, publisher_cap) = publication::create_for_testing(ctx);
+            let (publication, publisher_cap) = publication::create_for_testing(ctx);
 
             let payment = coin::mint_for_testing<SUI>(0, ctx);
 
             let subscription = subscription::subscribe(
-                &mut publication,
+                &publication,
                 &mut treasury,
                 subscription::create_tier_free(),
                 payment,
@@ -159,7 +159,7 @@ module private_publishing::subscription_tests {
         let creator = @0xCAFE;
         let mut scenario = test_scenario::begin(creator);
 
-        let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
 
         
         // Initialize treasury
@@ -172,13 +172,13 @@ module private_publishing::subscription_tests {
         {
             let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
             let ctx = test_scenario::ctx(&mut scenario);
-            let (mut publication, publisher_cap) = publication::create_for_testing(ctx);
+            let (publication, publisher_cap) = publication::create_for_testing(ctx);
 
             // Try to pay less than basic price
             let payment = coin::mint_for_testing<SUI>(1_000_000_000, ctx);
 
             let subscription = subscription::subscribe(
-                &mut publication,
+                &publication,
                 &mut treasury,
                 subscription::create_tier_basic(),
                 payment,
@@ -214,12 +214,12 @@ module private_publishing::subscription_tests {
         {
             let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
             let ctx = test_scenario::ctx(&mut scenario);
-            let (mut publication, publisher_cap) = publication::create_for_testing(ctx);
+            let (publication, publisher_cap) = publication::create_for_testing(ctx);
 
             let payment1 = coin::mint_for_testing<SUI>(BASIC_PRICE, ctx);
 
             let mut subscription = subscription::subscribe(
-                &mut publication,
+                &publication,
                 &mut treasury,
                 subscription::create_tier_basic(),
                 payment1,
@@ -263,7 +263,7 @@ module private_publishing::subscription_tests {
         let creator = @0xCAFE;
         let mut scenario = test_scenario::begin(creator);
 
-        let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
 
         
         // Initialize treasury
@@ -276,13 +276,13 @@ module private_publishing::subscription_tests {
         {
             let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
             let ctx = test_scenario::ctx(&mut scenario);
-            let (mut publication, publisher_cap) = publication::create_for_testing(ctx);
+            let (publication, publisher_cap) = publication::create_for_testing(ctx);
             let (mut kiosk, kiosk_cap) = kiosk::new(ctx);
 
             let payment = coin::mint_for_testing<SUI>(BASIC_PRICE, ctx);
 
             let subscription = subscription::subscribe(
-                &mut publication,
+                &publication,
                 &mut treasury,
                 subscription::create_tier_basic(),
                 payment,
@@ -318,7 +318,7 @@ module private_publishing::subscription_tests {
         let creator = @0xCAFE;
         let mut scenario = test_scenario::begin(creator);
 
-        let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
 
         
         // Initialize treasury
@@ -331,12 +331,12 @@ module private_publishing::subscription_tests {
         {
             let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
             let ctx = test_scenario::ctx(&mut scenario);
-            let (mut publication, publisher_cap) = publication::create_for_testing(ctx);
+            let (publication, publisher_cap) = publication::create_for_testing(ctx);
 
             let payment = coin::mint_for_testing<SUI>(PREMIUM_PRICE, ctx);
 
             let subscription = subscription::subscribe(
-                &mut publication,
+                &publication,
                 &mut treasury,
                 subscription::create_tier_premium(),
                 payment,
@@ -377,12 +377,12 @@ module private_publishing::subscription_tests {
         {
             let mut treasury = test_scenario::take_shared<Treasury>(&scenario);
             let ctx = test_scenario::ctx(&mut scenario);
-            let (mut publication, publisher_cap) = publication::create_for_testing(ctx);
+            let (publication, publisher_cap) = publication::create_for_testing(ctx);
 
             let payment = coin::mint_for_testing<SUI>(BASIC_PRICE, ctx);
 
             let subscription = subscription::subscribe(
-                &mut publication,
+                &publication,
                 &mut treasury,
                 subscription::create_tier_basic(),
                 payment,
